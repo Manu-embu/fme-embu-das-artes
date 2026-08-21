@@ -1,0 +1,109 @@
+const members = [
+  {
+    "name": "Adriana Ventura",
+    "image": "assets/img/membros/adriana-ventura.jpg"
+  },
+  {
+    "name": "Andrea Bermutti",
+    "image": "assets/img/membros/andrea-bermutti.jpg"
+  },
+  {
+    "name": "Bruna Kelly",
+    "image": "assets/img/membros/bruna-kelly.jpg"
+  },
+  {
+    "name": "Cris Morais",
+    "image": "assets/img/membros/cris-morais.jpg"
+  },
+  {
+    "name": "Cristiano Ventura",
+    "image": "assets/img/membros/cristiano-ventura.jpg"
+  },
+  {
+    "name": "Elizabethe Ferreira",
+    "image": "assets/img/membros/elizabethe-ferreira.jpg"
+  },
+  {
+    "name": "Elzamara Lopes",
+    "image": "assets/img/membros/elzamara-lopes.jpg"
+  },
+  {
+    "name": "Fabiana dos Santos",
+    "image": "assets/img/membros/fabiana-dos-santos.jpg"
+  },
+  {
+    "name": "Fernanda Farias",
+    "image": "assets/img/membros/fernanda-farias.jpg"
+  },
+  {
+    "name": "Fábio Pereira",
+    "image": "assets/img/membros/fabio-pereira.jpg"
+  },
+  {
+    "name": "Gisele Mesquita",
+    "image": "assets/img/membros/gisele-mesquita.jpg"
+  },
+  {
+    "name": "Jacqueline Aparecida",
+    "image": "assets/img/membros/jacqueline-aparecida.jpg"
+  },
+  {
+    "name": "Josias Patriolino",
+    "image": "assets/img/membros/josias-patriolino.jpg"
+  },
+  {
+    "name": "Joyce Hengles",
+    "image": "assets/img/membros/joyce-hengles.jpg"
+  },
+  {
+    "name": "Liliane Fukumar",
+    "image": "assets/img/membros/liliane-fukumar.jpg"
+  },
+  {
+    "name": "Lucila Duarte",
+    "image": "assets/img/membros/lucila-duarte.jpg"
+  },
+  {
+    "name": "Lucilene Alves",
+    "image": "assets/img/membros/lucilene-alves.jpg"
+  },
+  {
+    "name": "Manoel Santos",
+    "image": "assets/img/membros/manoel-santos.jpg"
+  },
+  {
+    "name": "Maria Rita",
+    "image": "assets/img/membros/maria-rita.jpg"
+  },
+  {
+    "name": "Vanusa dos Santos",
+    "image": "assets/img/membros/vanusa-dos-santos.jpg"
+  },
+  {
+    "name": "Vinícius Zammataro",
+    "image": "assets/img/membros/vinicius-zammataro.jpg"
+  }
+];
+
+const membersGrid=document.querySelector('#membersGrid'),searchInput=document.querySelector('#searchInput'),clearSearch=document.querySelector('#clearSearch'),visibleCount=document.querySelector('#visibleCount'),memberTotal=document.querySelector('#memberTotal'),emptyState=document.querySelector('#emptyState'),menu=document.querySelector('.menu'),nav=document.querySelector('.nav');
+const normalize=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function render(list){
+  membersGrid.innerHTML=list.map(m=>`<article class="member-card"><div class="photo-wrap"><img src="${m.image}" alt="Foto de ${m.name}" loading="lazy"></div><div class="member-info"><h3>${m.name}</h3><p>Integrante do FME</p></div></article>`).join('');
+  visibleCount.textContent=list.length;
+  emptyState.hidden=list.length>0;
+}
+memberTotal.textContent=members.length;
+visibleCount.textContent=members.length;
+render(members);
+searchInput.addEventListener('input',e=>{
+  const q=normalize(e.target.value.trim());
+  clearSearch.hidden=!q;
+  render(!q?members:members.filter(m=>normalize(m.name).includes(q)));
+});
+clearSearch.addEventListener('click',()=>{
+  searchInput.value=''; clearSearch.hidden=true; render(members); searchInput.focus();
+});
+menu.addEventListener('click',()=>{
+  const open=nav.classList.toggle('open'); menu.setAttribute('aria-expanded',open);
+});
+nav.addEventListener('click',()=>nav.classList.remove('open'));
