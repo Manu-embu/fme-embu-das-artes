@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153f35">
+  <title>PME 2026–2036 | Fórum Municipal de Educação</title>
+  <meta name="description" content="Ambiente de consulta ao PNE, elaboração de estratégias municipais e articulação com o monitoramento do PAR de Embu das Artes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/pme.css">
+</head>
+<body class="pme-page">
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">FME</span>
+      <span class="brand-copy"><strong>Fórum Municipal de Educação</strong><small>Embu das Artes • SP</small></span>
+    </a>
+    <nav class="nav">
+      <a href="index.html">Painel do Fórum</a>
+      <a href="#workspace">Elaboração do PME</a>
+      <a href="#fontes">Fontes</a>
+    </nav>
+    <button class="menu" aria-label="Abrir menu" aria-expanded="false">☰</button>
+  </header>
+
+  <main>
+    <section class="pme-hero">
+      <div>
+        <span class="eyebrow">Plano Municipal de Educação • 2026–2036</span>
+        <h1>Do objetivo nacional à estratégia que transforma o território.</h1>
+        <p>Um espaço de trabalho para conhecer o novo PNE, discutir prioridades de Embu das Artes, formular estratégias municipais e acompanhar ações já previstas no PAR.</p>
+      </div>
+      <div class="pme-hero-stats" aria-label="Resumo das fontes analisadas">
+        <article><strong id="pneObjectiveTotal">19</strong><span>objetivos do PNE</span></article>
+        <article><strong id="pneGoalTotal">73</strong><span>metas nacionais</span></article>
+        <article><strong id="pneStrategyTotal">372</strong><span>estratégias nacionais</span></article>
+        <article><strong id="parActionTotal">47</strong><span>ações do PAR</span></article>
+      </div>
+    </section>
+
+    <section id="workspace" class="pme-workspace">
+      <div class="workspace-heading">
+        <div>
+          <span class="kicker">Ambiente de elaboração</span>
+          <h2>Consultar, relacionar e construir</h2>
+        </div>
+        <p>As vinculações entre PAR e PNE são uma proposta técnica inicial e devem ser validadas pelo Fórum e pelas equipes responsáveis durante a elaboração do PME.</p>
+      </div>
+
+      <div class="view-tabs" role="tablist" aria-label="Etapas de trabalho do PME">
+        <button class="view-tab active" role="tab" aria-selected="true" data-view="pne">1. Objetivos e metas do PNE</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view="municipal">2. Estratégias municipais</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view="par">3. Monitoramento do PAR</button>
+      </div>
+
+      <section class="workspace-view active" id="view-pne" aria-label="Objetivos e metas do PNE">
+        <div class="pne-layout">
+          <aside class="objective-browser">
+            <label class="pme-search">
+              <span aria-hidden="true">⌕</span>
+              <input id="objectiveSearch" type="search" placeholder="Buscar objetivo ou tema">
+            </label>
+            <div id="objectiveList" class="objective-list"></div>
+          </aside>
+          <div id="objectiveDetail" class="objective-detail"></div>
+        </div>
+      </section>
+
+      <section class="workspace-view" id="view-municipal" aria-label="Estratégias municipais">
+        <div class="draft-grid">
+          <form id="strategyForm" class="strategy-form">
+            <div class="form-heading">
+              <div><span class="kicker">Rascunho técnico</span><h3>Propor estratégia municipal</h3></div>
+              <span class="local-badge">Salvo neste dispositivo</span>
+            </div>
+            <div class="form-row two">
+              <label>Objetivo do PNE<select id="draftObjective" required></select></label>
+              <label>Meta nacional relacionada<select id="draftGoal" required></select></label>
+            </div>
+            <label>Estratégia municipal proposta<textarea id="draftText" rows="4" required placeholder="Descreva uma ação municipal clara, executável e verificável."></textarea></label>
+            <label>Diagnóstico ou evidência que justifica a estratégia<textarea id="draftEvidence" rows="3" placeholder="Informe o problema, dado municipal ou desigualdade que deve ser enfrentada."></textarea></label>
+            <div class="form-row two">
+              <label>Indicador de acompanhamento<input id="draftIndicator" type="text" placeholder="Ex.: taxa de atendimento em creche"></label>
+              <label>Setor responsável<input id="draftOwner" type="text" placeholder="Ex.: Demanda / Pedagógico"></label>
+            </div>
+            <div class="form-row three">
+              <label>Linha de base<input id="draftBaseline" type="text" placeholder="Situação atual"></label>
+              <label>Meta municipal<input id="draftTarget" type="text" placeholder="Resultado esperado"></label>
+              <label>Prazo<input id="draftDeadline" type="text" placeholder="Ex.: 2030"></label>
+            </div>
+            <label>Ação do PAR relacionada<select id="draftPar"><option value="">Nenhuma ação vinculada</option></select></label>
+            <button class="btn primary" type="submit">Salvar proposta</button>
+            <p class="form-note">Este recurso cria rascunhos para discussão. A aprovação e a publicação oficial dependem das instâncias de elaboração do PME.</p>
+          </form>
+
+          <div class="draft-panel">
+            <div class="draft-panel-head">
+              <div><span class="kicker">Memória de trabalho</span><h3>Estratégias em elaboração</h3></div>
+              <button id="exportDrafts" class="outline-action" type="button">Exportar CSV</button>
+            </div>
+            <div id="draftList" class="draft-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace-view" id="view-par" aria-label="Monitoramento do PAR">
+        <div class="par-intro">
+          <div>
+            <span class="kicker">Plano de Ações Articuladas</span>
+            <h3>O PAR como camada operacional do PME</h3>
+            <p>O PAR reúne ações, indicadores, metas anuais e responsáveis. Sua integração permite identificar o que já está planejado para 2025–2028 e o que ainda precisa ser criado ou ampliado no horizonte decenal.</p>
+          </div>
+          <div class="par-status-summary" id="parStatusSummary"></div>
+        </div>
+        <div class="par-filters">
+          <label>Objetivo do PNE<select id="parObjectiveFilter"><option value="">Todos os objetivos</option></select></label>
+          <label>Situação<select id="parStatusFilter"><option value="">Todas as situações</option></select></label>
+          <label>Setor responsável<select id="parSectorFilter"><option value="">Todos os setores</option></select></label>
+          <label class="par-search">Buscar ação<input id="parSearch" type="search" placeholder="Digite um tema ou indicador"></label>
+        </div>
+        <div class="par-table-wrap">
+          <table class="par-table">
+            <thead><tr><th>Ação e vínculo</th><th>Indicador</th><th>Resultado atual</th><th>Meta 2028</th><th>Situação</th><th>Responsável</th></tr></thead>
+            <tbody id="parTableBody"></tbody>
+          </table>
+        </div>
+        <p id="parCount" class="result-count"></p>
+      </section>
+    </section>
+
+    <section id="fontes" class="source-note">
+      <div><span class="kicker light">Base documental</span><h2>Informação pública, participação social e rastreabilidade.</h2></div>
+      <div>
+        <p><strong>PNE:</strong> objetivos, metas e estratégias extraídos das tabelas da Lei nº 15.388, de 14 de abril de 2026.</p>
+        <p><strong>PAR:</strong> planilha municipal de monitoramento, com resultados atuais, metas de 2025 a 2028 e setores responsáveis.</p>
+        <p><strong>PME:</strong> as propostas registradas nesta página são rascunhos de trabalho e não constituem texto legal aprovado.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div><strong>FME</strong><span>Fórum Municipal de Educação de Embu das Artes</span></div>
+    <p>PME 2026–2036 • Ambiente de elaboração</p>
+    <a href="#workspace">Voltar ao trabalho ↑</a>
+  </footer>
+
+  <script src="assets/js/pne-par-data.js"></script>
+  <script src="assets/js/pme.js"></script>
+</body>
+</html>
