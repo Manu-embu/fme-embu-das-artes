@@ -1,6 +1,7 @@
 const source = window.PME_SOURCE_DATA;
 const pne = source.pne;
 const par = source.par;
+const config = window.PME_CONFIG || {};
 const draftStorageKey = 'fme-pme-estrategias-v1';
 
 const shortTitles = {
@@ -125,11 +126,32 @@ function saveDrafts(items){
   localStorage.setItem(draftStorageKey,JSON.stringify(items));
 }
 
+function apiConfigured(){
+  return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(config.apiUrl || '');
+}
+
+function setFormStatus(message,type='success'){
+  const status=el('submitStatus');
+  status.textContent=message;
+  status.className=`form-status visible ${type}`;
+}
+
+function createSubmissionProtocol(){
+  const parts=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const datePart=type=>parts.find(part=>part.type===type)?.value||'';
+  const date=`${datePart('year')}${datePart('month')}${datePart('day')}`;
+  const random=window.crypto?.getRandomValues
+    ? [...window.crypto.getRandomValues(new Uint8Array(4))].map(value=>value.toString(16).padStart(2,'0')).join('').toUpperCase()
+    : Math.random().toString(36).slice(2,10).toUpperCase();
+  return `PME-${date}-${random}`;
+}
+
 function draftCardHtml(draft,withDelete=true){
   const objective = Number(draft.objective);
   return `<article class="draft-card">
-    <header><span class="draft-objective">Objetivo ${objective} • ${escapeHtml(draft.goal)}</span>${withDelete?`<button class="delete-draft" data-delete="${escapeHtml(draft.id)}" type="button">Excluir</button>`:''}</header>
+    <header><span class="draft-objective">Objetivo ${objective} • ${escapeHtml(draft.goal)}</span>${withDelete?`<button class="delete-draft" data-delete="${escapeHtml(draft.id)}" type="button">Remover cópia local</button>`:''}</header>
     <h4>${escapeHtml(draft.text)}</h4>
+    ${draft.participantName?`<p><strong>Participante:</strong> ${escapeHtml(draft.participantName)}${draft.participantSegment?` • ${escapeHtml(draft.participantSegment)}`:''}</p>`:''}
     ${draft.evidence?`<p><strong>Evidência:</strong> ${escapeHtml(draft.evidence)}</p>`:''}
     ${draft.indicator?`<p><strong>Indicador:</strong> ${escapeHtml(draft.indicator)}</p>`:''}
     <p>${draft.owner?`<strong>Responsável:</strong> ${escapeHtml(draft.owner)} • `:''}${draft.target?`<strong>Meta:</strong> ${escapeHtml(draft.target)} `:''}${draft.deadline?`até ${escapeHtml(draft.deadline)}`:''}</p>
@@ -145,25 +167,59 @@ function renderDrafts(){
   }));
 }
 
-function addDraft(event){
+async function sendToCentralSheet(draft){
+  const body=new URLSearchParams({
+    submissionId:draft.id,website:draft.website||'',participantName:draft.participantName,participantEmail:draft.participantEmail,
+    participantSegment:draft.participantSegment,objective:draft.objectiveText,goal:draft.goalText,
+    strategy:draft.text,evidence:draft.evidence,indicator:draft.indicator,baseline:draft.baseline,
+    target:draft.target,deadline:draft.deadline,owner:draft.owner,parAction:draft.parAction,
+    consent:draft.consent
+  });
+  await fetch(config.apiUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body});
+}
+
+async function addDraft(event){
   event.preventDefault();
+  if(el('draftWebsite').value){setFormStatus('Proposta recebida.','success');return;}
+  const objectiveOption=el('draftObjective').selectedOptions[0];
+  const goalOption=el('draftGoal').selectedOptions[0];
+  const parOption=el('draftPar').selectedOptions[0];
   const draft={
-    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())),
-    createdAt:new Date().toISOString(),objective:Number(el('draftObjective').value),goal:el('draftGoal').value,
+    id:createSubmissionProtocol(),createdAt:new Date().toISOString(),
+    participantName:el('draftParticipantName').value.trim(),participantEmail:el('draftParticipantEmail').value.trim(),
+    participantSegment:el('draftParticipantSegment').value,website:el('draftWebsite').value,
+    objective:Number(el('draftObjective').value),objectiveText:objectiveOption?.textContent.trim()||'',
+    goal:el('draftGoal').value,goalText:goalOption?.textContent.trim()||'',
     text:el('draftText').value.trim(),evidence:el('draftEvidence').value.trim(),indicator:el('draftIndicator').value.trim(),
     owner:el('draftOwner').value.trim(),baseline:el('draftBaseline').value.trim(),target:el('draftTarget').value.trim(),
-    deadline:el('draftDeadline').value.trim(),parRow:el('draftPar').value
+    deadline:el('draftDeadline').value.trim(),parRow:el('draftPar').value,
+    parAction:parOption?.textContent.trim()||'Nenhuma ação vinculada',consent:el('draftConsent').checked?'Sim':'Não'
   };
   const drafts=loadDrafts();drafts.unshift(draft);saveDrafts(drafts);
-  const objective=draft.objective;event.target.reset();populateDraftObjective(objective);renderDrafts();renderObjectiveDetail();
+  const button=el('submitProposal');button.disabled=true;button.textContent='Enviando proposta…';
+  try{
+    if(apiConfigured()){
+      await sendToCentralSheet(draft);
+      setFormStatus(`Proposta enviada para moderação. Protocolo: ${draft.id}. Guarde este número para referência.`,'success');
+    }else{
+      setFormStatus('A proposta foi salva neste dispositivo. A conexão com a planilha central ainda precisa ser ativada.','warning');
+    }
+    const objective=draft.objective;event.target.reset();populateDraftObjective(objective);renderDrafts();renderObjectiveDetail();
+  }catch(error){
+    console.error(error);
+    setFormStatus('Não foi possível alcançar a planilha central. A cópia local foi preservada; tente novamente mais tarde.','error');
+    renderDrafts();renderObjectiveDetail();
+  }finally{
+    button.disabled=false;button.textContent='Enviar proposta para moderação';
+  }
 }
 
 function csvCell(value){return `"${String(value??'').replace(/"/g,'""')}"`;}
 function exportDrafts(){
   const drafts=loadDrafts();
   if(!drafts.length){alert('Ainda não há estratégias municipais salvas para exportar.');return;}
-  const headers=['Objetivo PNE','Meta relacionada','Estratégia municipal','Diagnóstico/evidência','Indicador','Linha de base','Meta municipal','Prazo','Responsável','Linha PAR','Criado em'];
-  const rows=drafts.map(d=>[d.objective,d.goal,d.text,d.evidence,d.indicator,d.baseline,d.target,d.deadline,d.owner,d.parRow,d.createdAt]);
+  const headers=['Nome','E-mail','Representação/Segmento','Objetivo PNE','Meta relacionada','Estratégia municipal','Diagnóstico/evidência','Indicador','Linha de base','Meta municipal','Prazo','Responsável','Ação PAR','Consentimento','Criado em'];
+  const rows=drafts.map(d=>[d.participantName,d.participantEmail,d.participantSegment,d.objectiveText||d.objective,d.goalText||d.goal,d.text,d.evidence,d.indicator,d.baseline,d.target,d.deadline,d.owner,d.parAction||d.parRow,d.consent,d.createdAt]);
   const csv='\ufeff'+[headers,...rows].map(row=>row.map(csvCell).join(';')).join('\r\n');
   const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='estrategias-municipais-pme.csv';link.click();URL.revokeObjectURL(link.href);
 }
@@ -204,6 +260,7 @@ function initialize(){
   el('objectiveSearch').addEventListener('input',event=>renderObjectiveList(event.target.value));
   el('draftObjective').addEventListener('change',event=>{populateDraftGoals(event.target.value);populateDraftPar(event.target.value);});
   el('strategyForm').addEventListener('submit',addDraft);el('exportDrafts').addEventListener('click',exportDrafts);
+  el('storageBadge').textContent=apiConfigured()?'Arquivamento central ativo':'Configuração pendente';
   ['parObjectiveFilter','parStatusFilter','parSectorFilter'].forEach(id=>el(id).addEventListener('change',renderPar));el('parSearch').addEventListener('input',renderPar);
   const menu=document.querySelector('.menu'),nav=document.querySelector('.nav');menu.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',open);});nav.addEventListener('click',()=>nav.classList.remove('open'));
   renderObjectiveList();renderObjectiveDetail();populateDraftObjective();renderDrafts();populateParFilters();renderPar();
