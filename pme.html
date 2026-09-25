@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="assets/css/pme.css">
+  <link rel="stylesheet" href="assets/css/pme-integration.css">
 </head>
 <body class="pme-page">
   <header class="topbar">
@@ -74,7 +75,22 @@
           <form id="strategyForm" class="strategy-form">
             <div class="form-heading">
               <div><span class="kicker">Rascunho técnico</span><h3>Propor estratégia municipal</h3></div>
-              <span class="local-badge">Salvo neste dispositivo</span>
+              <span class="local-badge" id="storageBadge">Consulta moderada</span>
+            </div>
+            <div class="participant-block">
+              <h4>Identificação do participante</h4>
+              <div class="form-row two">
+                <label>Nome completo<input id="draftParticipantName" type="text" maxlength="160" required autocomplete="name" placeholder="Informe seu nome"></label>
+                <label>E-mail<input id="draftParticipantEmail" type="email" maxlength="180" required autocomplete="email" placeholder="seuemail@exemplo.com"></label>
+              </div>
+              <label>Representação ou segmento
+                <select id="draftParticipantSegment" required>
+                  <option value="">Selecione</option>
+                  <option>FME</option><option>Secretaria Municipal de Educação</option><option>Unidade escolar</option>
+                  <option>Conselho</option><option>Sociedade civil</option><option>Estudante</option>
+                  <option>Família/Responsável</option><option>Outro</option>
+                </select>
+              </label>
             </div>
             <div class="form-row two">
               <label>Objetivo do PNE<select id="draftObjective" required></select></label>
@@ -92,8 +108,11 @@
               <label>Prazo<input id="draftDeadline" type="text" placeholder="Ex.: 2030"></label>
             </div>
             <label>Ação do PAR relacionada<select id="draftPar"><option value="">Nenhuma ação vinculada</option></select></label>
-            <button class="btn primary" type="submit">Salvar proposta</button>
-            <p class="form-note">Este recurso cria rascunhos para discussão. A aprovação e a publicação oficial dependem das instâncias de elaboração do PME.</p>
+            <label class="honeypot" aria-hidden="true">Não preencha este campo<input id="draftWebsite" type="text" tabindex="-1" autocomplete="off"></label>
+            <label class="consent-check"><input id="draftConsent" type="checkbox" required><span>Autorizo o armazenamento dos meus dados e desta proposta exclusivamente para a elaboração, discussão e monitoramento do PME 2026–2036.</span></label>
+            <button class="btn primary" id="submitProposal" type="submit">Enviar proposta para moderação</button>
+            <p id="submitStatus" class="form-status" role="status" aria-live="polite"></p>
+            <p class="form-note">A proposta será arquivada como “Recebida” e somente será incorporada ao PME após análise das instâncias responsáveis. Uma cópia também permanece neste dispositivo para segurança.</p>
           </form>
 
           <div class="draft-panel">
@@ -147,6 +166,7 @@
     <a href="#workspace">Voltar ao trabalho ↑</a>
   </footer>
 
+  <script src="assets/js/pme-config.js"></script>
   <script src="assets/js/pne-par-data.js"></script>
   <script src="assets/js/pme.js"></script>
 </body>
