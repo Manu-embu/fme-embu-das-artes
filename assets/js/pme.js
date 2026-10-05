@@ -2,7 +2,6 @@ const source = window.PME_SOURCE_DATA;
 const pne = source.pne;
 const par = source.par;
 const config = window.PME_CONFIG || {};
-const draftStorageKey = 'fme-pme-estrategias-v1';
 
 const shortTitles = {
   1:'Creche e pré-escola',2:'Qualidade na educação infantil',3:'Alfabetização e matemática',
@@ -18,9 +17,24 @@ const el = id => document.getElementById(id);
 const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const escapeHtml = value => String(value ?? '').replace(/[&<>"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[char]));
 const unique = values => [...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+const emptyCounts = () => ({total:0,received:0,inAnalysis:0,approved:0,rejected:0,incorporated:0,other:0});
 
 let selectedObjective = 1;
 let selectedDetailTab = 'metas';
+let dashboardReady = false;
+let dashboardData = {totals:emptyCounts(),objectives:{}};
+
+function apiConfigured(){
+  return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(config.apiUrl || '');
+}
+
+function countsForObjective(number){
+  return dashboardData.objectives?.[number] || dashboardData.objectives?.[String(number)] || emptyCounts();
+}
+
+function plural(count,singular,pluralForm){
+  return `${count} ${count===1?singular:pluralForm}`;
+}
 
 function setView(view){
   document.querySelectorAll('.view-tab').forEach(button=>{
@@ -29,17 +43,19 @@ function setView(view){
     button.setAttribute('aria-selected',String(active));
   });
   document.querySelectorAll('.workspace-view').forEach(section=>section.classList.remove('active'));
-  el(`view-${view}`).classList.add('active');
+  el(`view-${view}`)?.classList.add('active');
 }
 
 function renderObjectiveList(query=''){
   const term = normalize(query);
   const filtered = pne.filter(item=>normalize(`${item.number} ${shortTitles[item.number]} ${item.title}`).includes(term));
-  el('objectiveList').innerHTML = filtered.map(item=>`
-    <button class="objective-button ${item.number===selectedObjective?'active':''}" data-objective="${item.number}" type="button">
+  el('objectiveList').innerHTML = filtered.map(item=>{
+    const count = countsForObjective(item.number).total;
+    return `<button class="objective-button ${item.number===selectedObjective?'active':''}" data-objective="${item.number}" type="button">
       <span class="objective-number">${String(item.number).padStart(2,'0')}</span>
-      <span>${escapeHtml(shortTitles[item.number])}</span>
-    </button>`).join('') || '<p class="empty-card">Nenhum objetivo encontrado.</p>';
+      <span class="objective-button-copy">${escapeHtml(shortTitles[item.number])}<small>${dashboardReady?plural(count,'proposta','propostas'):'carregando propostas'}</small></span>
+    </button>`;
+  }).join('') || '<p class="empty-card">Nenhum objetivo encontrado.</p>';
   document.querySelectorAll('.objective-button').forEach(button=>button.addEventListener('click',()=>{
     selectedObjective = Number(button.dataset.objective);
     selectedDetailTab = 'metas';
@@ -58,170 +74,128 @@ function linkedParActions(objectiveNumber){
   return par.filter(action=>action.pneObjectives.includes(objectiveNumber));
 }
 
+function municipalProposalHtml(objectiveNumber,counts){
+  if(!dashboardReady){
+    return '<div class="empty-card">Carregando as propostas municipais desta central…</div>';
+  }
+  if(!counts.total){
+    return `<div class="empty-card">Nenhuma proposta municipal recebida para este objetivo.<br>
+      <a class="inline-action" href="propostas.html?objetivo=${objectiveNumber}">Enviar uma proposta</a></div>`;
+  }
+  return `<div class="objective-public-proposals">
+    <p class="privacy-note">Acompanhamento agregado. Dados pessoais e textos ainda não moderados não são exibidos.</p>
+    <div class="objective-status-grid">
+      <article><span>Recebidas</span><strong>${counts.received}</strong></article>
+      <article><span>Em análise</span><strong>${counts.inAnalysis}</strong></article>
+      <article><span>Aprovadas</span><strong>${counts.approved}</strong></article>
+      <article><span>Incorporadas</span><strong>${counts.incorporated}</strong></article>
+      <article><span>Rejeitadas</span><strong>${counts.rejected}</strong></article>
+    </div>
+    <a class="inline-action" href="propostas.html?objetivo=${objectiveNumber}">Enviar outra proposta para este objetivo</a>
+  </div>`;
+}
+
 function renderObjectiveDetail(){
   const objective = pne.find(item=>item.number===selectedObjective);
   const linked = linkedParActions(objective.number);
-  const drafts = loadDrafts().filter(item=>Number(item.objective)===objective.number);
+  const proposalCounts = countsForObjective(objective.number);
   let content = '';
   if(selectedDetailTab==='metas') content = renderLegalItems(objective.metas);
   if(selectedDetailTab==='national') content = renderLegalItems(objective.strategies);
-  if(selectedDetailTab==='municipal') content = drafts.length
-    ? `<div class="detail-stack">${drafts.map(draft=>draftCardHtml(draft,false)).join('')}</div>`
-    : `<div class="empty-card">Nenhuma estratégia municipal registrada para este objetivo.<br><button class="inline-action" id="createForObjective" type="button">Criar proposta</button></div>`;
+  if(selectedDetailTab==='municipal') content = municipalProposalHtml(objective.number,proposalCounts);
   if(selectedDetailTab==='par') content = linked.length
     ? `<div class="detail-stack">${linked.map(action=>`<article class="par-link-card"><small>${escapeHtml(action['Situação'])} • ${escapeHtml(action['Setor Responsável'])}</small><h4>${escapeHtml(action['Objetivos e Ações'])}</h4><p>${escapeHtml(action['Indicador'])}</p></article>`).join('')}</div>`
     : '<div class="empty-card">Nenhuma ação do PAR foi vinculada a este objetivo na proposta técnica inicial.</div>';
 
+  const proposalLabel = dashboardReady ? plural(proposalCounts.total,'proposta municipal','propostas municipais') : 'propostas carregando';
   el('objectiveDetail').innerHTML = `
-    <div class="objective-kicker"><span>Objetivo ${String(objective.number).padStart(2,'0')}</span><b>${objective.metas.length} metas</b><b>${objective.strategies.length} estratégias nacionais</b><b>${linked.length} ações do PAR</b></div>
+    <div class="objective-kicker"><span>Objetivo ${String(objective.number).padStart(2,'0')}</span><b>${objective.metas.length} metas</b><b>${objective.strategies.length} estratégias nacionais</b><b class="municipal-count-badge">${proposalLabel}</b><b>${linked.length} ações do PAR</b></div>
     <h2>${escapeHtml(objective.title)}</h2>
     <div class="detail-tabs" role="tablist">
       <button class="detail-tab ${selectedDetailTab==='metas'?'active':''}" data-detail="metas" type="button">Metas nacionais</button>
       <button class="detail-tab ${selectedDetailTab==='national'?'active':''}" data-detail="national" type="button">Estratégias nacionais</button>
-      <button class="detail-tab ${selectedDetailTab==='municipal'?'active':''}" data-detail="municipal" type="button">Estratégias municipais (${drafts.length})</button>
+      <button class="detail-tab ${selectedDetailTab==='municipal'?'active':''}" data-detail="municipal" type="button">Propostas municipais (${dashboardReady?proposalCounts.total:'…'})</button>
       <button class="detail-tab ${selectedDetailTab==='par'?'active':''}" data-detail="par" type="button">Ações do PAR (${linked.length})</button>
     </div>${content}`;
   document.querySelectorAll('.detail-tab').forEach(button=>button.addEventListener('click',()=>{
     selectedDetailTab = button.dataset.detail;
     renderObjectiveDetail();
   }));
-  const createButton = el('createForObjective');
-  if(createButton) createButton.addEventListener('click',()=>openDraftForObjective(objective.number));
 }
 
-function fillSelect(select, options, placeholder){
+function fillSelect(select,options,placeholder){
   select.innerHTML = placeholder ? `<option value="">${escapeHtml(placeholder)}</option>` : '';
   select.insertAdjacentHTML('beforeend',options.map(option=>`<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join(''));
 }
 
-function populateDraftObjective(selected=1){
-  fillSelect(el('draftObjective'),pne.map(item=>({value:item.number,label:`Objetivo ${item.number} — ${shortTitles[item.number]}`})));
-  el('draftObjective').value=String(selected);
-  populateDraftGoals(selected);
-  populateDraftPar(selected);
-}
+function renderPublicDashboard(){
+  const totals = dashboardData.totals || emptyCounts();
+  const values = {
+    publicTotal:totals.total,publicReceived:totals.received,publicInAnalysis:totals.inAnalysis,
+    publicApproved:totals.approved,publicIncorporated:totals.incorporated,publicRejected:totals.rejected
+  };
+  Object.entries(values).forEach(([id,value])=>{if(el(id))el(id).textContent=dashboardReady?value:'—';});
 
-function populateDraftGoals(number){
-  const objective = pne.find(item=>item.number===Number(number));
-  fillSelect(el('draftGoal'),objective.metas.map(item=>({value:item.label,label:`${item.label} ${item.text}`})));
-}
-
-function populateDraftPar(number){
-  const actions=linkedParActions(Number(number));
-  fillSelect(el('draftPar'),actions.map(item=>({value:item.row,label:`${item['Objetivos e Ações']} — ${item['Setor Responsável']}`})),'Nenhuma ação vinculada');
-}
-
-function openDraftForObjective(number){
-  setView('municipal');
-  populateDraftObjective(number);
-  el('draftText').focus();
-  el('workspace').scrollIntoView({behavior:'smooth'});
-}
-
-function loadDrafts(){
-  try{return JSON.parse(localStorage.getItem(draftStorageKey)||'[]');}catch{return [];}
-}
-
-function saveDrafts(items){
-  localStorage.setItem(draftStorageKey,JSON.stringify(items));
-}
-
-function apiConfigured(){
-  return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(config.apiUrl || '');
-}
-
-function setFormStatus(message,type='success'){
-  const status=el('submitStatus');
-  status.textContent=message;
-  status.className=`form-status visible ${type}`;
-}
-
-function createSubmissionProtocol(){
-  const parts=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
-  const datePart=type=>parts.find(part=>part.type===type)?.value||'';
-  const date=`${datePart('year')}${datePart('month')}${datePart('day')}`;
-  const random=window.crypto?.getRandomValues
-    ? [...window.crypto.getRandomValues(new Uint8Array(4))].map(value=>value.toString(16).padStart(2,'0')).join('').toUpperCase()
-    : Math.random().toString(36).slice(2,10).toUpperCase();
-  return `PME-${date}-${random}`;
-}
-
-function draftCardHtml(draft,withDelete=true){
-  const objective = Number(draft.objective);
-  return `<article class="draft-card">
-    <header><span class="draft-objective">Objetivo ${objective} • ${escapeHtml(draft.goal)}</span>${withDelete?`<button class="delete-draft" data-delete="${escapeHtml(draft.id)}" type="button">Remover cópia local</button>`:''}</header>
-    <h4>${escapeHtml(draft.text)}</h4>
-    ${draft.participantName?`<p><strong>Participante:</strong> ${escapeHtml(draft.participantName)}${draft.participantSegment?` • ${escapeHtml(draft.participantSegment)}`:''}</p>`:''}
-    ${draft.evidence?`<p><strong>Evidência:</strong> ${escapeHtml(draft.evidence)}</p>`:''}
-    ${draft.indicator?`<p><strong>Indicador:</strong> ${escapeHtml(draft.indicator)}</p>`:''}
-    <p>${draft.owner?`<strong>Responsável:</strong> ${escapeHtml(draft.owner)} • `:''}${draft.target?`<strong>Meta:</strong> ${escapeHtml(draft.target)} `:''}${draft.deadline?`até ${escapeHtml(draft.deadline)}`:''}</p>
-  </article>`;
-}
-
-function renderDrafts(){
-  const drafts=loadDrafts();
-  el('draftList').innerHTML=drafts.length?drafts.map(item=>draftCardHtml(item)).join(''):'<div class="empty-card">As propostas salvas neste dispositivo aparecerão aqui.</div>';
-  document.querySelectorAll('[data-delete]').forEach(button=>button.addEventListener('click',()=>{
-    saveDrafts(loadDrafts().filter(item=>item.id!==button.dataset.delete));
-    renderDrafts();renderObjectiveDetail();
+  const maxCount = Math.max(1,...pne.map(item=>countsForObjective(item.number).total));
+  el('objectiveProposalBars').innerHTML = pne.map(item=>{
+    const count = countsForObjective(item.number).total;
+    const width = dashboardReady ? Math.max(count ? 4 : 0,(count/maxCount)*100) : 0;
+    return `<button class="objective-proposal-row" type="button" data-dashboard-objective="${item.number}">
+      <span class="bar-objective-number">${String(item.number).padStart(2,'0')}</span>
+      <span class="bar-objective-title">${escapeHtml(shortTitles[item.number])}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${width}%"></span></span>
+      <strong>${dashboardReady?count:'—'}</strong>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('[data-dashboard-objective]').forEach(button=>button.addEventListener('click',()=>{
+    selectedObjective = Number(button.dataset.dashboardObjective);
+    selectedDetailTab = 'municipal';
+    setView('pne');
+    renderObjectiveList(el('objectiveSearch').value);
+    renderObjectiveDetail();
+    el('workspace').scrollIntoView({behavior:'smooth'});
   }));
 }
 
-async function sendToCentralSheet(draft){
-  const body=new URLSearchParams({
-    submissionId:draft.id,website:draft.website||'',participantName:draft.participantName,participantEmail:draft.participantEmail,
-    participantSegment:draft.participantSegment,objective:draft.objectiveText,goal:draft.goalText,
-    strategy:draft.text,evidence:draft.evidence,indicator:draft.indicator,baseline:draft.baseline,
-    target:draft.target,deadline:draft.deadline,owner:draft.owner,parAction:draft.parAction,
-    consent:draft.consent
-  });
-  await fetch(config.apiUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body});
+function formatUpdateTime(value){
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Sao_Paulo'}).format(date);
 }
 
-async function addDraft(event){
-  event.preventDefault();
-  if(el('draftWebsite').value){setFormStatus('Proposta recebida.','success');return;}
-  const objectiveOption=el('draftObjective').selectedOptions[0];
-  const goalOption=el('draftGoal').selectedOptions[0];
-  const parOption=el('draftPar').selectedOptions[0];
-  const draft={
-    id:createSubmissionProtocol(),createdAt:new Date().toISOString(),
-    participantName:el('draftParticipantName').value.trim(),participantEmail:el('draftParticipantEmail').value.trim(),
-    participantSegment:el('draftParticipantSegment').value,website:el('draftWebsite').value,
-    objective:Number(el('draftObjective').value),objectiveText:objectiveOption?.textContent.trim()||'',
-    goal:el('draftGoal').value,goalText:goalOption?.textContent.trim()||'',
-    text:el('draftText').value.trim(),evidence:el('draftEvidence').value.trim(),indicator:el('draftIndicator').value.trim(),
-    owner:el('draftOwner').value.trim(),baseline:el('draftBaseline').value.trim(),target:el('draftTarget').value.trim(),
-    deadline:el('draftDeadline').value.trim(),parRow:el('draftPar').value,
-    parAction:parOption?.textContent.trim()||'Nenhuma ação vinculada',consent:el('draftConsent').checked?'Sim':'Não'
-  };
-  const drafts=loadDrafts();drafts.unshift(draft);saveDrafts(drafts);
-  const button=el('submitProposal');button.disabled=true;button.textContent='Enviando proposta…';
-  try{
-    if(apiConfigured()){
-      await sendToCentralSheet(draft);
-      setFormStatus(`Proposta enviada para moderação. Protocolo: ${draft.id}. Guarde este número para referência.`,'success');
-    }else{
-      setFormStatus('A proposta foi salva neste dispositivo. A conexão com a planilha central ainda precisa ser ativada.','warning');
-    }
-    const objective=draft.objective;event.target.reset();populateDraftObjective(objective);renderDrafts();renderObjectiveDetail();
-  }catch(error){
-    console.error(error);
-    setFormStatus('Não foi possível alcançar a planilha central. A cópia local foi preservada; tente novamente mais tarde.','error');
-    renderDrafts();renderObjectiveDetail();
-  }finally{
-    button.disabled=false;button.textContent='Enviar proposta para moderação';
+function receiveDashboard(data){
+  if(!data || data.ok!==true || data.privacy!=='aggregated'){
+    showDashboardError('Os dados públicos estão temporariamente indisponíveis. Tente novamente em alguns minutos.');
+    return;
   }
+  dashboardData = data;
+  dashboardReady = true;
+  el('proposalDashboardState').textContent = 'Dados públicos atualizados. Nenhuma informação pessoal é exibida.';
+  el('proposalDashboardState').className = 'dashboard-state ready';
+  el('dashboardUpdatedAt').textContent = `Última atualização: ${formatUpdateTime(data.updatedAt)}.`;
+  renderPublicDashboard();
+  renderObjectiveList(el('objectiveSearch').value);
+  renderObjectiveDetail();
 }
 
-function csvCell(value){return `"${String(value??'').replace(/"/g,'""')}"`;}
-function exportDrafts(){
-  const drafts=loadDrafts();
-  if(!drafts.length){alert('Ainda não há estratégias municipais salvas para exportar.');return;}
-  const headers=['Nome','E-mail','Representação/Segmento','Objetivo PNE','Meta relacionada','Estratégia municipal','Diagnóstico/evidência','Indicador','Linha de base','Meta municipal','Prazo','Responsável','Ação PAR','Consentimento','Criado em'];
-  const rows=drafts.map(d=>[d.participantName,d.participantEmail,d.participantSegment,d.objectiveText||d.objective,d.goalText||d.goal,d.text,d.evidence,d.indicator,d.baseline,d.target,d.deadline,d.owner,d.parAction||d.parRow,d.consent,d.createdAt]);
-  const csv='\ufeff'+[headers,...rows].map(row=>row.map(csvCell).join(';')).join('\r\n');
-  const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));link.download='estrategias-municipais-pme.csv';link.click();URL.revokeObjectURL(link.href);
+function showDashboardError(message){
+  const state = el('proposalDashboardState');
+  state.textContent = message;
+  state.className = 'dashboard-state error';
+}
+
+function loadPublicDashboard(){
+  if(!apiConfigured()){
+    showDashboardError('A integração pública ainda não foi configurada.');
+    return;
+  }
+  document.querySelectorAll('script[data-pme-dashboard]').forEach(script=>script.remove());
+  window.__receivePMEDashboardV3 = receiveDashboard;
+  const script = document.createElement('script');
+  script.dataset.pmeDashboard = 'true';
+  script.src = `${config.apiUrl}?action=dashboard&callback=__receivePMEDashboardV3&t=${Date.now()}`;
+  script.onerror = ()=>showDashboardError('Não foi possível atualizar o painel agora. Os demais conteúdos continuam disponíveis.');
+  document.body.appendChild(script);
 }
 
 function statusClass(status){return normalize(status).replace(/\s+/g,'-');}
@@ -254,16 +228,32 @@ function renderPar(){
 }
 
 function initialize(){
-  el('pneObjectiveTotal').textContent=source.meta.pneObjectives;el('pneGoalTotal').textContent=source.meta.pneGoals;
-  el('pneStrategyTotal').textContent=source.meta.pneStrategies;el('parActionTotal').textContent=source.meta.parActions;
+  el('pneObjectiveTotal').textContent=source.meta.pneObjectives;
+  el('pneGoalTotal').textContent=source.meta.pneGoals;
+  el('pneStrategyTotal').textContent=source.meta.pneStrategies;
+  el('parActionTotal').textContent=source.meta.parActions;
   document.querySelectorAll('.view-tab').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
+  document.querySelectorAll('[data-open-view]').forEach(button=>button.addEventListener('click',()=>{
+    setView(button.dataset.openView);
+    el('workspace').scrollIntoView({behavior:'smooth'});
+  }));
   el('objectiveSearch').addEventListener('input',event=>renderObjectiveList(event.target.value));
-  el('draftObjective').addEventListener('change',event=>{populateDraftGoals(event.target.value);populateDraftPar(event.target.value);});
-  el('strategyForm').addEventListener('submit',addDraft);el('exportDrafts').addEventListener('click',exportDrafts);
-  el('storageBadge').textContent=apiConfigured()?'Arquivamento central ativo':'Configuração pendente';
-  ['parObjectiveFilter','parStatusFilter','parSectorFilter'].forEach(id=>el(id).addEventListener('change',renderPar));el('parSearch').addEventListener('input',renderPar);
-  const menu=document.querySelector('.menu'),nav=document.querySelector('.nav');menu.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',open);});nav.addEventListener('click',()=>nav.classList.remove('open'));
-  renderObjectiveList();renderObjectiveDetail();populateDraftObjective();renderDrafts();populateParFilters();renderPar();
+  ['parObjectiveFilter','parStatusFilter','parSectorFilter'].forEach(id=>el(id).addEventListener('change',renderPar));
+  el('parSearch').addEventListener('input',renderPar);
+  const menu=document.querySelector('.menu'),nav=document.querySelector('.nav');
+  menu.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',open);});
+  nav.addEventListener('click',()=>nav.classList.remove('open'));
+  renderObjectiveList();
+  renderObjectiveDetail();
+  renderPublicDashboard();
+  populateParFilters();
+  renderPar();
+  if(location.hash==='#painel-propostas'){
+    setView('municipal');
+    el('workspace').scrollIntoView({block:'start'});
+  }
+  loadPublicDashboard();
+  window.setInterval(loadPublicDashboard,300000);
 }
 
 initialize();
