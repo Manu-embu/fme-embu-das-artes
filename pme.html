@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="assets/css/pme.css">
   <link rel="stylesheet" href="assets/css/pme-integration.css">
+  <link rel="stylesheet" href="assets/css/pme-dashboard.css">
 </head>
 <body class="pme-page">
   <header class="topbar">
@@ -22,6 +23,7 @@
     <nav class="nav">
       <a href="index.html">Painel do Fórum</a>
       <a href="#workspace">Elaboração do PME</a>
+      <a href="propostas.html">Enviar proposta</a>
       <a href="#fontes">Fontes</a>
     </nav>
     <button class="menu" aria-label="Abrir menu" aria-expanded="false">☰</button>
@@ -33,6 +35,10 @@
         <span class="eyebrow">Plano Municipal de Educação • 2026–2036</span>
         <h1>Do objetivo nacional à estratégia que transforma o território.</h1>
         <p>Um espaço de trabalho para conhecer o novo PNE, discutir prioridades de Embu das Artes, formular estratégias municipais e acompanhar ações já previstas no PAR.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="propostas.html">Enviar uma proposta</a>
+          <button class="btn dashboard-link" type="button" data-open-view="municipal">Acompanhar as propostas</button>
+        </div>
       </div>
       <div class="pme-hero-stats" aria-label="Resumo das fontes analisadas">
         <article><strong id="pneObjectiveTotal">19</strong><span>objetivos do PNE</span></article>
@@ -53,7 +59,7 @@
 
       <div class="view-tabs" role="tablist" aria-label="Etapas de trabalho do PME">
         <button class="view-tab active" role="tab" aria-selected="true" data-view="pne">1. Objetivos e metas do PNE</button>
-        <button class="view-tab" role="tab" aria-selected="false" data-view="municipal">2. Estratégias municipais</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view="municipal">2. Propostas municipais</button>
         <button class="view-tab" role="tab" aria-selected="false" data-view="par">3. Monitoramento do PAR</button>
       </div>
 
@@ -70,59 +76,34 @@
         </div>
       </section>
 
-      <section class="workspace-view" id="view-municipal" aria-label="Estratégias municipais">
-        <div class="draft-grid">
-          <form id="strategyForm" class="strategy-form">
-            <div class="form-heading">
-              <div><span class="kicker">Rascunho técnico</span><h3>Propor estratégia municipal</h3></div>
-              <span class="local-badge" id="storageBadge">Consulta moderada</span>
-            </div>
-            <div class="participant-block">
-              <h4>Identificação do participante</h4>
-              <div class="form-row two">
-                <label>Nome completo<input id="draftParticipantName" type="text" maxlength="160" required autocomplete="name" placeholder="Informe seu nome"></label>
-                <label>E-mail<input id="draftParticipantEmail" type="email" maxlength="180" required autocomplete="email" placeholder="seuemail@exemplo.com"></label>
-              </div>
-              <label>Representação ou segmento
-                <select id="draftParticipantSegment" required>
-                  <option value="">Selecione</option>
-                  <option>FME</option><option>Secretaria Municipal de Educação</option><option>Unidade escolar</option>
-                  <option>Conselho</option><option>Sociedade civil</option><option>Estudante</option>
-                  <option>Família/Responsável</option><option>Outro</option>
-                </select>
-              </label>
-            </div>
-            <div class="form-row two">
-              <label>Objetivo do PNE<select id="draftObjective" required></select></label>
-              <label>Meta nacional relacionada<select id="draftGoal" required></select></label>
-            </div>
-            <label>Estratégia municipal proposta<textarea id="draftText" rows="4" required placeholder="Descreva uma ação municipal clara, executável e verificável."></textarea></label>
-            <label>Diagnóstico ou evidência que justifica a estratégia<textarea id="draftEvidence" rows="3" placeholder="Informe o problema, dado municipal ou desigualdade que deve ser enfrentada."></textarea></label>
-            <div class="form-row two">
-              <label>Indicador de acompanhamento<input id="draftIndicator" type="text" placeholder="Ex.: taxa de atendimento em creche"></label>
-              <label>Setor responsável<input id="draftOwner" type="text" placeholder="Ex.: Demanda / Pedagógico"></label>
-            </div>
-            <div class="form-row three">
-              <label>Linha de base<input id="draftBaseline" type="text" placeholder="Situação atual"></label>
-              <label>Meta municipal<input id="draftTarget" type="text" placeholder="Resultado esperado"></label>
-              <label>Prazo<input id="draftDeadline" type="text" placeholder="Ex.: 2030"></label>
-            </div>
-            <label>Ação do PAR relacionada<select id="draftPar"><option value="">Nenhuma ação vinculada</option></select></label>
-            <label class="honeypot" aria-hidden="true">Não preencha este campo<input id="draftWebsite" type="text" tabindex="-1" autocomplete="off"></label>
-            <label class="consent-check"><input id="draftConsent" type="checkbox" required><span>Autorizo o armazenamento dos meus dados e desta proposta exclusivamente para a elaboração, discussão e monitoramento do PME 2026–2036.</span></label>
-            <button class="btn primary" id="submitProposal" type="submit">Enviar proposta para moderação</button>
-            <p id="submitStatus" class="form-status" role="status" aria-live="polite"></p>
-            <p class="form-note">A proposta será arquivada como “Recebida” e somente será incorporada ao PME após análise das instâncias responsáveis. Uma cópia também permanece neste dispositivo para segurança.</p>
-          </form>
-
-          <div class="draft-panel">
-            <div class="draft-panel-head">
-              <div><span class="kicker">Memória de trabalho</span><h3>Estratégias em elaboração</h3></div>
-              <button id="exportDrafts" class="outline-action" type="button">Exportar CSV</button>
-            </div>
-            <div id="draftList" class="draft-list"></div>
+      <section class="workspace-view" id="view-municipal" aria-label="Painel público das propostas municipais">
+        <div class="proposal-dashboard-head">
+          <div>
+            <span class="kicker">Consulta pública moderada</span>
+            <h3>Acompanhamento das propostas municipais</h3>
+            <p>Os números abaixo são atualizados a partir da central de propostas. Somente dados agregados são publicados; nomes, e-mails e textos ainda não moderados permanecem restritos à equipe responsável.</p>
           </div>
+          <a class="btn primary" href="propostas.html">Enviar nova proposta</a>
         </div>
+
+        <div id="proposalDashboardState" class="dashboard-state" role="status" aria-live="polite">Carregando dados da consulta…</div>
+        <div class="proposal-summary-grid" aria-label="Resumo das propostas">
+          <article class="proposal-summary total"><span>Total de propostas</span><strong id="publicTotal">—</strong></article>
+          <article class="proposal-summary received"><span>Recebidas</span><strong id="publicReceived">—</strong></article>
+          <article class="proposal-summary analysis"><span>Em análise</span><strong id="publicInAnalysis">—</strong></article>
+          <article class="proposal-summary approved"><span>Aprovadas</span><strong id="publicApproved">—</strong></article>
+          <article class="proposal-summary incorporated"><span>Incorporadas</span><strong id="publicIncorporated">—</strong></article>
+          <article class="proposal-summary rejected"><span>Rejeitadas</span><strong id="publicRejected">—</strong></article>
+        </div>
+
+        <div class="objective-dashboard-card">
+          <div class="objective-dashboard-heading">
+            <div><span class="kicker">Distribuição temática</span><h3>Propostas por objetivo do PNE</h3></div>
+            <p>Clique em um objetivo para consultar sua situação no ambiente de elaboração.</p>
+          </div>
+          <div id="objectiveProposalBars" class="objective-proposal-bars"></div>
+        </div>
+        <p id="dashboardUpdatedAt" class="dashboard-updated"></p>
       </section>
 
       <section class="workspace-view" id="view-par" aria-label="Monitoramento do PAR">
@@ -155,7 +136,7 @@
       <div>
         <p><strong>PNE:</strong> objetivos, metas e estratégias extraídos das tabelas da Lei nº 15.388, de 14 de abril de 2026.</p>
         <p><strong>PAR:</strong> planilha municipal de monitoramento, com resultados atuais, metas de 2025 a 2028 e setores responsáveis.</p>
-        <p><strong>PME:</strong> as propostas registradas nesta página são rascunhos de trabalho e não constituem texto legal aprovado.</p>
+        <p><strong>PME:</strong> as contribuições registradas são propostas em moderação e somente passam a integrar o plano após análise e deliberação das instâncias responsáveis.</p>
       </div>
     </section>
   </main>

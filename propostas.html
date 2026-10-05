@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153f35">
+  <title>Enviar proposta | PME 2026–2036</title>
+  <meta name="description" content="Formulário público para envio de propostas municipais ao Plano Municipal de Educação de Embu das Artes 2026–2036.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/pme.css">
+  <link rel="stylesheet" href="assets/css/pme-integration.css">
+  <link rel="stylesheet" href="assets/css/propostas.css">
+</head>
+<body id="top" class="pme-page proposal-page">
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">FME</span>
+      <span class="brand-copy"><strong>Fórum Municipal de Educação</strong><small>Embu das Artes • SP</small></span>
+    </a>
+    <nav class="nav">
+      <a href="pme.html">Painel do PME</a>
+      <a href="pme.html#painel-propostas">Acompanhar propostas</a>
+      <a href="index.html">Painel do Fórum</a>
+    </nav>
+    <button class="menu" aria-label="Abrir menu" aria-expanded="false">☰</button>
+  </header>
+
+  <main>
+    <section class="proposal-hero">
+      <div>
+        <span class="eyebrow">Participação social • PME 2026–2036</span>
+        <h1>Proponha uma estratégia para a educação de Embu das Artes.</h1>
+        <p>Sua contribuição será registrada na central de propostas, analisada pelas instâncias responsáveis e poderá integrar o novo Plano Municipal de Educação.</p>
+      </div>
+      <aside>
+        <strong>Como funciona</strong>
+        <ol>
+          <li>Escolha um objetivo e uma meta do PNE.</li>
+          <li>Descreva a estratégia municipal.</li>
+          <li>Informe como o resultado poderá ser acompanhado.</li>
+          <li>Guarde o protocolo exibido após o envio.</li>
+        </ol>
+      </aside>
+    </section>
+
+    <section class="proposal-content">
+      <div class="proposal-intro">
+        <span class="kicker">Consulta pública moderada</span>
+        <h2>Formulário de proposta municipal</h2>
+        <p>Os campos marcados como obrigatórios garantem que a contribuição possa ser compreendida e vinculada ao planejamento educacional. Dados pessoais não são publicados no painel de acompanhamento.</p>
+      </div>
+
+      <form id="strategyForm" class="strategy-form proposal-form">
+        <div class="form-heading">
+          <div><span class="kicker">Identificação</span><h3>Participante</h3></div>
+          <span class="local-badge" id="storageBadge">Verificando conexão</span>
+        </div>
+        <div class="participant-block">
+          <div class="form-row two">
+            <label>Nome completo<input id="draftParticipantName" type="text" maxlength="160" required autocomplete="name" placeholder="Informe seu nome"></label>
+            <label>E-mail<input id="draftParticipantEmail" type="email" maxlength="180" required autocomplete="email" placeholder="seuemail@exemplo.com"></label>
+          </div>
+          <label>Representação ou segmento
+            <select id="draftParticipantSegment" required>
+              <option value="">Selecione</option>
+              <option>FME</option><option>Secretaria Municipal de Educação</option><option>Unidade escolar</option>
+              <option>Conselho</option><option>Sociedade civil</option><option>Estudante</option>
+              <option>Família/Responsável</option><option>Outro</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-section-heading"><span class="kicker">Vinculação</span><h3>Objetivo e meta nacional</h3></div>
+        <div class="form-row two">
+          <label>Objetivo do PNE<select id="draftObjective" required></select></label>
+          <label>Meta nacional relacionada<select id="draftGoal" required></select></label>
+        </div>
+
+        <div class="form-section-heading"><span class="kicker">Proposição</span><h3>Estratégia municipal</h3></div>
+        <label>Estratégia municipal proposta<textarea id="draftText" rows="5" required placeholder="Descreva uma ação municipal clara, executável e verificável."></textarea></label>
+        <label>Diagnóstico ou evidência que justifica a estratégia<textarea id="draftEvidence" rows="3" placeholder="Informe o problema, dado municipal ou desigualdade que deve ser enfrentada."></textarea></label>
+
+        <details class="form-help">
+          <summary>Como preencher indicador, linha de base, meta e prazo?</summary>
+          <div>
+            <p><strong>Indicador:</strong> o que será medido. Ex.: “Percentual de estudantes alfabetizados ao final do 2º ano”.</p>
+            <p><strong>Linha de base:</strong> o valor atual e seu ano de referência. Ex.: “40,5% em 2024”.</p>
+            <p><strong>Meta municipal:</strong> o resultado que se pretende alcançar. Ex.: “100% dos estudantes alfabetizados”.</p>
+            <p><strong>Prazo:</strong> até quando a meta deverá ser atingida. Ex.: “2030”.</p>
+          </div>
+        </details>
+
+        <div class="form-row two">
+          <label>Indicador de acompanhamento<input id="draftIndicator" type="text" placeholder="Ex.: percentual de estudantes alfabetizados"></label>
+          <label>Setor responsável<input id="draftOwner" type="text" placeholder="Ex.: Ensino Fundamental / Pedagógico"></label>
+        </div>
+        <div class="form-row three">
+          <label>Linha de base<input id="draftBaseline" type="text" placeholder="Situação atual e ano"></label>
+          <label>Meta municipal<input id="draftTarget" type="text" placeholder="Resultado esperado"></label>
+          <label>Prazo<input id="draftDeadline" type="text" placeholder="Ex.: 2030"></label>
+        </div>
+        <label>Ação do PAR relacionada<select id="draftPar"><option value="">Nenhuma ação vinculada</option></select></label>
+        <label class="honeypot" aria-hidden="true">Não preencha este campo<input id="draftWebsite" type="text" tabindex="-1" autocomplete="off"></label>
+        <label class="consent-check"><input id="draftConsent" type="checkbox" required><span>Autorizo o armazenamento dos meus dados e desta proposta exclusivamente para a elaboração, discussão e monitoramento do PME 2026–2036.</span></label>
+        <button class="btn primary" id="submitProposal" type="submit">Enviar proposta para moderação</button>
+        <p id="submitStatus" class="form-status" role="status" aria-live="polite"></p>
+        <p class="form-note">A proposta entrará como “Recebida” e somente será incorporada ao PME após análise. Uma cópia de segurança ficará armazenada neste navegador.</p>
+      </form>
+
+      <div class="proposal-footer-actions">
+        <a class="btn ghost" href="pme.html">Consultar objetivos, metas e PAR</a>
+        <a class="btn primary" href="pme.html#painel-propostas">Acompanhar as propostas</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div><strong>FME</strong><span>Fórum Municipal de Educação de Embu das Artes</span></div>
+    <p>PME 2026–2036 • Consulta pública moderada</p>
+    <a href="#top">Voltar ao início ↑</a>
+  </footer>
+
+  <script src="assets/js/pme-config.js"></script>
+  <script src="assets/js/pne-par-data.js"></script>
+  <script src="assets/js/propostas.js"></script>
+</body>
+</html>
